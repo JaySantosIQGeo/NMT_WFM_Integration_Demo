@@ -1,6 +1,6 @@
 {
-    "customRulePlugin": {
-        "customRulePlugin": "Field Validator"
+    "fieldValidatorPlugin": {
+        "fieldValidatorPluginTitle": "Field Validator"
     },
     "customRuleModal": {
         "windowHeader": "Field Validator",

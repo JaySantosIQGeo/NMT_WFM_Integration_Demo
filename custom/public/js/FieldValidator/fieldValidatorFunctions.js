@@ -37,26 +37,26 @@ export const buildFeatureList = features => {
 };
 
 //Receives (in order):
-//- The value inputted by the user
-//- The rule selected by the user
 //- The value of the field selected by the user
-export const validate = (a, rule, b) => {
-    if (a && b) {
+//- The rule selected by the user
+//- The value inputted by the user
+export const validate = (fieldValue, pickedRule, inputtedValue) => {
+    if (fieldValue && inputtedValue) {
         //This const contains the definition of the rules that can be selected by the user
         const rules = {
-            '>': (a, b) => Number(a) > Number(b),
-            '<': (a, b) => Number(a) < Number(b),
-            true: a => a,
-            false: a => !a,
-            have: (a, b) => a.includes(b),
-            notHave: (a, b) => !a.includes(b)
+            '>': (fieldValue, inputtedValue) => Number(fieldValue) > Number(inputtedValue),
+            '<': (fieldValue, inputtedValue) => Number(fieldValue) < Number(inputtedValue),
+            true: fieldValue => fieldValue,
+            false: fieldValue => !fieldValue,
+            have: (fieldValue, inputtedValue) => fieldValue.includes(inputtedValue),
+            notHave: (fieldValue, inputtedValue) => !fieldValue.includes(inputtedValue)
         };
 
-        if (rules[rule]) {
+        if (rules[pickedRule]) {
             //The function returns the bolean value of the rule selected by the user
-            return rules[rule](a, b);
+            return rules[pickedRule](fieldValue, inputtedValue);
         } else {
-            throw new Error(`Unknown rule: ${rule}`);
+            throw new Error(`Unknown rule: ${pickedRule}`);
         }
     } else {
         return false;

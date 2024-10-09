@@ -104,8 +104,7 @@ export const FieldValidatorModal = ({ open }) => {
             pickedFeatureType
         );
 
-        //const { createTicket } = wfm.redux.tickets;
-        //await wfm.store.dispatch(createTicket({ values: ticketObj }));
+        console.log("This is where the ticket would be created");
     };
 
     const renderFields = () => {

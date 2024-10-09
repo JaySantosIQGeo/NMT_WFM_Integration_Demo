@@ -1,11 +1,11 @@
-import myw from 'myWorld-client';
-import React, { useState, useEffect } from 'react';
-import { useLocale } from 'myWorld-client/react';
-import { DraggableModal, Button } from 'myWorld-client/react';
-import { Avatar, Cascader, List } from 'antd';
+import myw from 'myWorld-client'; //module that allows access to the database, focus the map and set the "Details" tab
+import React, { useState, useEffect } from 'react'; //React hooks
+import { useLocale } from 'myWorld-client/react'; //Localisation hook
+import { DraggableModal, Button } from 'myWorld-client/react'; //Our own react components, using IQGeo layout
+import { Avatar, Cascader, List } from 'antd'; //Ant Design components
 import greenImg from '../../images/green_circle.png';
 import redImg from '../../images/red_circle.png';
-import wfm from '../../../../workflow_manager/public/js/base/wfm.js';
+import wfm from '../../../../workflow_manager/public/js/base/wfm.js'; //WFM module, used to create the ticket
 import {
     buildFeatureList,
     validate,
@@ -14,24 +14,23 @@ import {
 } from './fieldValidatorFunctions.js';
 
 export const FieldValidatorModal = ({ open }) => {
-    const appRef = myw.app;
-    const db = appRef.database;
-    const { msg } = useLocale('customRuleModal');
+    const appRef = myw.app; //Application reference
+    const db = appRef.database; //Database reference
+    const { msg } = useLocale('customRuleModal'); //Localisation hook indicating the localisation group to be used
 
-    const [isOpen, setIsOpen] = useState(open);
+    const [isOpen, setIsOpen] = useState(open); //Flag indicating if the modal is open
 
-    const [featuresList, setFeaturesList] = useState([]);
-    const [features, setFeatures] = useState();
-    const [ruleType, setRuleType] = useState();
-    const [pickedRule, setPickedRule] = useState('');
-    const [inputtedValue, setInputtedValue] = useState('');
-    const [pickedFeatureType, setPickedFeatureType] = useState('');
-    const [pickedField, setPickedField] = useState('');
-    const [result, setResult] = useState([]);
+    const [featuresList, setFeaturesList] = useState([]); //List of features for the Cascader
+    const [features, setFeatures] = useState(); //List of features from the database for reference
+    const [ruleType, setRuleType] = useState(); //Type of rule picked by the user (int, string, bool)
+    const [pickedRule, setPickedRule] = useState(''); //Rule picked by the user (<, >, true, false, etc...)
+    const [inputtedValue, setInputtedValue] = useState(''); //Value inputted by the user to be compared with the field value
+    const [pickedFeatureType, setPickedFeatureType] = useState(''); //Feature type (cable, pole...) picked by the user
+    const [pickedField, setPickedField] = useState(''); //Field picked by the user
+    const [result, setResult] = useState([]); //Array of validation results
 
     //Effect that runs after the initial render and queries the database for the list of features.
-    //It also populates the featureList state that will be used to present the list of features and
-    //fields to the user
+    //In a nutshell: Queries the database for features and fields and builds the list used by the Cascader
     useEffect(() => {
         const dbFeatures = db.getFeatureTypes();
 
@@ -55,12 +54,16 @@ export const FieldValidatorModal = ({ open }) => {
         setFeaturesList(featuresListArray);
     }, []);
 
+    //Function that closes the window
     const handleCancel = () => {
         setIsOpen(false);
     };
 
     //Function called when the user selects a feature and a field from the cascader component
+    //It sets the rule type, picked feature and picked field
+    //It also resets the picked rule, inputted value and result states
     const onFieldSelected = value => {
+        console.log(features[value[0]].fields[value[1]].type);
         const cleanType = features[value[0]].fields[value[1]].type.replace(/\(\d+\)$/, '');
         setRuleType(cleanType);
         setPickedFeatureType(value[0]);
@@ -84,52 +87,28 @@ export const FieldValidatorModal = ({ open }) => {
         }
     };
 
-    //Function called when the user presses the OK button, it validates the rule for all features
-    //within the current map bounds
-    const validateRule = async () => {
-        setResult([]); //Resets the result state
-        let tempResult = [];
-        //Queries the database for all the features of the user's picked type that are within
-        //the current map bounds
-        db.getFeatures(pickedFeatureType, { bounds: appRef.map.getBounds() }).then(result => {
-            for (const feature in result) {
-                if (result[feature]?.properties) {
-                    const props = result[feature]?.properties;
-                    typeof props[pickedField] === 'number' //If the type of the picked field is a number, limit the number of floating point digits to 2
-                        ? (props[pickedField] = props[pickedField].toFixed(2))
-                        : props[pickedField];
-                    //Create the result object containing:
-                    //feature: the feature that was validated
-                    //result: a boolean with the result of the validation (true or false)
-                    const newResult = {
-                        feature: result[feature],
-                        result: validate(props[pickedField], pickedRule, inputtedValue)
-                    };
-                    tempResult.push(newResult);
-                }
-            }
-            setResult(tempResult);
-        });
-    };
-
     //Function that creates the WFM ticket in the database
-    const createTicket = async itemObj => {
+    const createTicket = async feature => {
         const ticketObj = createTicketObject(
-            itemObj,
+            feature,
             pickedRule,
             pickedField,
             inputtedValue,
             pickedFeatureType
         );
 
-        //Redux is the global state manager library that provides state persistence in WFM
-        //Here the ticket is actually created in the database and the notification is show to the user
-        //const { createTicket } = wfm.redux.tickets;
-        //await wfm.store.dispatch(createTicket({ values: ticketObj }));
+        console.log("This is where the ticket would be created");
     };
 
     //Creates the input fields to be shown to the user, calls the buildFields function from the
     //fieldValidatorFunctions.js file
+    //buildField receive as parameters:
+    //- An array with the radio button objects, containing the value and label of each button
+    //- A reference to the function that sets the rule state when the user selects a radio button
+    //- The placeholder for the input field containing the name of the feature and the name of the field
+    //- A reference to the state that holds the value inputted by the user
+    //- A reference to the function that sets the value state when the user types in the input field
+
     const renderFields = () => {
         switch (ruleType) {
             case 'integer':
@@ -178,6 +157,34 @@ export const FieldValidatorModal = ({ open }) => {
         }
     };
 
+    //Function called when the user presses the OK button, it validates the rule for all features
+    //within the current map bounds
+    const validateRule = async () => {
+        setResult([]); //Resets the result state
+        let tempResult = [];
+        //Queries the database for all the features of the user's picked type that are within
+        //the current map bounds
+        db.getFeatures(pickedFeatureType, { bounds: appRef.map.getBounds() }).then(result => {
+            for (const feature in result) {
+                if (result[feature]?.properties) {
+                    const props = result[feature].properties;
+                    typeof props[pickedField] === 'number' //If the type of the picked field is a number, limit the number of floating point digits to 2
+                        ? (props[pickedField] = props[pickedField].toFixed(2))
+                        : props[pickedField];
+                    //Create the result object containing:
+                    //feature: the feature that was validated
+                    //result: a boolean with the result of the validation (true or false)
+                    const newResult = {
+                        feature: result[feature],
+                        result: validate(props[pickedField], pickedRule, inputtedValue)
+                    };
+                    tempResult.push(newResult);
+                }
+            }
+            setResult(tempResult);
+        });
+    };
+
     //Builds the list element with the result of the rule validation for each of the features
     const renderResult = () => {
         return (
@@ -199,7 +206,7 @@ export const FieldValidatorModal = ({ open }) => {
                                 }}
                                 //Each feature on the list shows a red or green circle depending on the result of the validation
                                 avatar={
-                                    item.result ? (
+                                    listItem.result ? (
                                         <Avatar src={greenImg} />
                                     ) : (
                                         <Avatar src={redImg} />
@@ -215,7 +222,7 @@ export const FieldValidatorModal = ({ open }) => {
                                 // If the result valus is false, this means that the feature failed the check, so the "Create WFM ticket" button is shown
                                 <Button
                                     type="primary"
-                                    onClick={() => createTicket(item.resultFeature)}
+                                    onClick={() => createTicket(listItem.feature)}
                                 >
                                     {msg('wfm_ticket_button')}
                                 </Button>
@@ -243,7 +250,7 @@ export const FieldValidatorModal = ({ open }) => {
                 </Button>
             ]}
         >
-            {/* <Cascader options={featuresList} onChange={onFieldSelected} /> 
+            {/* <Cascader options={featuresList} onChange={onFieldSelected} />
             {renderFields()}
             {true && result.length > 0 ? renderResult() : null} */}
         </DraggableModal>
